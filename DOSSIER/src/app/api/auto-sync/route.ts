@@ -1,19 +1,13 @@
 import { NextResponse } from 'next/server'
+import { isAdminOrCronRequest } from '@/lib/adminAuth'
 
 /**
- * Lightweight auto-sync trigger.
- * Called by the admin page's setInterval every 2 minutes.
- * Also callable by external cron jobs (pass ?secret=ADMIN_PASSWORD).
+ * Lightweight auto-sync trigger for external schedulers.
+ * Requires Authorization: Bearer <ADMIN_PASSWORD or CRON_SECRET>.
  * Forwards to /api/sync internally using the server-side env var.
  */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const secret = searchParams.get('secret')
-
-  // Verify via env secret so the URL doesn't need to expose a password
-  // Also accepts no secret if called from the same server (internal)
-  const expectedSecret = process.env.ADMIN_PASSWORD
-  if (secret && secret !== expectedSecret) {
+  if (!isAdminOrCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
