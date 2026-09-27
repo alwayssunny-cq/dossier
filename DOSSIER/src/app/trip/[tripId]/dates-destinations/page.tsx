@@ -5,6 +5,7 @@ import DatesDestinationsGallery from '@/components/DatesDestinationsGallery'
 import DatesDestinationsStructured from '@/components/DatesDestinationsStructured'
 import IterationDropdown from '@/components/itinerary/IterationDropdown'
 import type { Trip, Iteration, DatesDestination } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 export default async function DatesDestinationsPage({
   params,
@@ -14,6 +15,7 @@ export default async function DatesDestinationsPage({
   searchParams: Promise<{ stage?: string; iter?: string }>
 }) {
   const { tripId }            = await params
+  await requireTripAccess(tripId)
   const { stage: stageParam, iter: iterParam } = await searchParams
   const supabase = createAdminClient()
 

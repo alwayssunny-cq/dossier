@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import type { Trip, Experience, Stay, Transfer } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── Coordinates for weather fetch ─────────────────────────────────────────────
 const COORDS: Record<string, [number, number]> = {
@@ -166,6 +167,7 @@ export default async function TodayPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const db = createAdminClient()
 
   const { data: trip } = await db

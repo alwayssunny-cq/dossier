@@ -1,6 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { notFound } from 'next/navigation'
 import type { Trip, Document } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── Category mapping ──────────────────────────────────────────────────────────
 // Maps raw document_type strings → display group headings
@@ -67,6 +68,7 @@ export default async function DocumentsPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const db = createAdminClient()
 
   const { data: trip } = await db

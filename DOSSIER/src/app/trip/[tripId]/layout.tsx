@@ -1,6 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { createClient } from '@/lib/supabase/server'
-import { notFound, redirect } from 'next/navigation'
+import { notFound } from 'next/navigation'
+import { requireTripAccess } from '@/lib/tripAccess'
 import type { Trip } from '@/lib/types'
 import TripTabs from '@/components/TripTabs'
 import VersionSelector from '@/components/VersionSelector'
@@ -36,18 +36,11 @@ export default async function TripLayout({
   children: React.ReactNode
   params: Promise<{ tripId: string }>
 }) {
-  // Auth is enforced here, not in the proxy.
-  //
-  // The dashboard has always checked the session in the page itself and has
-  // always worked; this layout checked nothing and leaned on the proxy, and
-  // that is the one that bounced people back to login. Reading the cookie in a
-  // server component works on Netlify's runtime; the proxy's session handling
-  // does not, so the proxy no longer decides who gets in.
-  const auth = await createClient()
-  const { data: { user } } = await auth.auth.getUser()
-  if (!user) redirect('/login')
-
+  // Auth is enforced here and in every trip page, not in the proxy: signed out
+  // goes to login, and a trip that isn't the viewer's is a 404. Pages repeat
+  // the check because layouts don't re-render on client-side navigation.
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const supabase = createAdminClient()
 
   const { data: trip } = await supabase

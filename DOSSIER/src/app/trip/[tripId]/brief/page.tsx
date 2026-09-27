@@ -11,6 +11,7 @@ import ItineraryDrawer from '@/components/ItineraryDrawer'
 import AboutDestinationCard from '@/components/AboutDestinationCard'
 import ResfeberEngine from '@/components/ResfeberEngine'
 import SectionIndex from '@/components/SectionIndex'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -969,6 +970,7 @@ export default async function BriefPage({
   searchParams: Promise<{ stage?: string; version?: string }>
 }) {
   const { tripId }          = await params
+  await requireTripAccess(tripId)
   const { stage: stageOverride } = await searchParams
   const db = createAdminClient()
 

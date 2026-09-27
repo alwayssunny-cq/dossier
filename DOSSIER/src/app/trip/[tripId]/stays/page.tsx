@@ -3,6 +3,7 @@ import StaysGallery from '@/components/StaysGallery'
 import StaysStructured from '@/components/StaysStructured'
 import IterationDropdown from '@/components/itinerary/IterationDropdown'
 import type { Stay } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 /**
  * Day/month label for an iteration, matching the other crafting tabs.
@@ -23,6 +24,7 @@ export default async function StaysPage({
   searchParams: Promise<{ iter?: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const { iter: iterParam } = await searchParams
   const supabase = createAdminClient()
 

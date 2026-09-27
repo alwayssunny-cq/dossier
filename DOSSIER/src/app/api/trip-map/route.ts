@@ -1,5 +1,5 @@
 /**
- * GET /api/trip-map?places=Kohima, India|Mohbondha, India|...
+ * GET /api/trip-map?trip=<trips.id>&places=Kohima, India|Mohbondha, India|...
  *
  * Draws the journey as a static terrain map with the driving route along real
  * roads, and streams the image back so no map token reaches the browser.
@@ -17,6 +17,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { canAccessTrip, getSessionUser } from '@/lib/tripAccess'
 
 const MAPBOX = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? ''
 const GOOGLE = process.env.GOOGLE_MAPS_API_KEY ?? ''
@@ -128,6 +129,16 @@ function googleUrl(places: string[], size: string): string {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
+
+  // Only for a signed-in client, drawing a map for one of their own trips —
+  // otherwise this is an open proxy spending the map providers' quota.
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  const tripUuid = searchParams.get('trip') ?? ''
+  if (!tripUuid || !(await canAccessTrip(user, { tripUuid }))) {
+    return NextResponse.json({ error: 'Not found' }, { status: 404 })
+  }
+
   const raw = searchParams.get('places') ?? ''
 
   // Both providers cap a dimension at 640 on their standard tiers and clamp
@@ -147,7 +158,7 @@ export async function GET(request: Request) {
   const hit = imageCache.get(cacheKey)
   if (hit && hit.expires > Date.now()) {
     return new NextResponse(hit.body, {
-      headers: { 'Content-Type': hit.type, 'Cache-Control': 'public, max-age=86400' },
+      headers: { 'Content-Type': hit.type, 'Cache-Control': 'private, max-age=86400' },
     })
   }
 
@@ -191,7 +202,7 @@ export async function GET(request: Request) {
     const type = res.headers.get('content-type') ?? 'image/png'
     imageCache.set(cacheKey, { body, type, expires: Date.now() + TTL_MS })
     return new NextResponse(body, {
-      headers: { 'Content-Type': type, 'Cache-Control': 'public, max-age=86400' },
+      headers: { 'Content-Type': type, 'Cache-Control': 'private, max-age=86400' },
     })
   } catch (err) {
     console.error('[trip-map] fetch failed', err)

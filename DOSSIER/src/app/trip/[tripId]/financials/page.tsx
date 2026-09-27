@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { SubSectionOpen } from '@/components/PageSection'
 import { notFound } from 'next/navigation'
 import type { Trip, Quotation, QuotationLineItem, Payment, Invoice } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 function fmt(amount: number | null, currency = 'USD') {
   if (amount == null) return '—'
@@ -79,6 +80,7 @@ export default async function FinancialsPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const db = createAdminClient()
 
   const { data: trip } = await db

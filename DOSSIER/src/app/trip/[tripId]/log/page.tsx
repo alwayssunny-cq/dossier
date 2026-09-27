@@ -2,6 +2,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Message } from '@/lib/types'
 import LogClient from './LogClient'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 export default async function LogPage({
   params,
@@ -9,6 +10,7 @@ export default async function LogPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const supabase = await createClient()
   const db = createAdminClient()
 

@@ -5,6 +5,7 @@ import type { Trip, DestinationInfo } from '@/lib/types'
 import { DESTINATION_DATA, fetchWeather } from '@/lib/destinationData'
 import type { WeatherSummary } from '@/lib/destinationData'
 import AboutDestinationCard from '@/components/AboutDestinationCard'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── Packing data ──────────────────────────────────────────────────────────────
 
@@ -79,6 +80,7 @@ export default async function TravelGuidePage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const db = createAdminClient()
 
   const { data: trip } = await db

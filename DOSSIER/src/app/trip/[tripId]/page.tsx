@@ -2,6 +2,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { redirect } from 'next/navigation'
 import type { Trip } from '@/lib/types'
 import { getTripPhase } from '@/lib/tripPhase'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 export default async function TripPage({
   params,
@@ -9,6 +10,7 @@ export default async function TripPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const db = createAdminClient()
 
   const { data: trip } = await db

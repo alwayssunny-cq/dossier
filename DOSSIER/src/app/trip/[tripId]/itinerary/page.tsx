@@ -13,6 +13,7 @@ import { geocodeCities } from '@/lib/geocode'
 import ExperiencesList from '@/components/ExperiencesList'
 import StaysClient    from '@/components/StaysClient'
 import TransfersClient from '@/components/TransfersClient'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -268,6 +269,7 @@ export default async function ItineraryPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { tripId }  = await params
+  await requireTripAccess(tripId)
   const resolved    = await searchParams
   const iterParam   = typeof resolved.iter  === 'string' ? resolved.iter  : null
   const subParam    = typeof resolved.sub   === 'string' ? resolved.sub   : null

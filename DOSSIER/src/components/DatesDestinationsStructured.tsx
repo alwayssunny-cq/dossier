@@ -35,7 +35,7 @@ function Overview({ row, mapImage, mapPlaces }: { row: DatesDestination; mapImag
   const expect = lines(row.what_to_expect)
   // An uploaded map always wins; otherwise draw the route ourselves
   const mapSrc = mapImage ?? (mapPlaces.length > 0
-    ? `/api/trip-map?places=${encodeURIComponent(mapPlaces.join('|'))}`
+    ? `/api/trip-map?trip=${encodeURIComponent(row.trip_id)}&places=${encodeURIComponent(mapPlaces.join('|'))}`
     : null)
   return (
     <section style={{ marginBottom: 'var(--pad-96)' }}>

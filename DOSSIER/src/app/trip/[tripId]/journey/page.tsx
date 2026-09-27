@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 /**
  * The full journey, on its own page.
@@ -14,5 +15,6 @@ export default async function JourneyPage({
   params: Promise<{ tripId: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   redirect(`/trip/${tripId}/your-trip?view=journey`)
 }

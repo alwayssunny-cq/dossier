@@ -13,6 +13,7 @@ import RecommendsSection from '@/components/RecommendsSection'
 import ConciergeRequestsSection from '@/components/ConciergeRequestsSection'
 import VouchersSection, { isVoucher } from '@/components/VouchersSection'
 import { getTripPhase } from '@/lib/tripPhase'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -137,6 +138,7 @@ export default async function YourTripPage({
   searchParams: Promise<{ stage?: string; view?: string }>
 }) {
   const { tripId }              = await params
+  await requireTripAccess(tripId)
   const { stage: stageParam, view }   = await searchParams
   // ?view=journey opens the full itinerary on its own, without today above it.
   const journeyOnly = view === 'journey'

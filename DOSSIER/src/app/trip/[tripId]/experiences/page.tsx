@@ -3,6 +3,7 @@ import ExperiencesGallery from '@/components/ExperiencesGallery'
 import ExperiencesStructured from '@/components/ExperiencesStructured'
 import IterationDropdown from '@/components/itinerary/IterationDropdown'
 import type { DatesDestination, Experience, Iteration, Transfer } from '@/lib/types'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 /** Day/month label for an iteration, as the other crafting tabs write it. */
 function iterDayMonth(d: string | null): string {
@@ -19,6 +20,7 @@ export default async function ExperiencesPage({
   searchParams: Promise<{ iter?: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const { iter: iterParam } = await searchParams
   const supabase = createAdminClient()
 

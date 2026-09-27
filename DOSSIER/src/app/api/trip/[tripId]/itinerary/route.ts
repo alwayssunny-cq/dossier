@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { NextResponse } from 'next/server'
+import { canAccessTrip, getSessionUser } from '@/lib/tripAccess'
 
 function fmtDay(d: string): string {
   try {
@@ -14,6 +15,9 @@ export async function GET(
   { params }: { params: Promise<{ tripId: string }> },
 ) {
   const { tripId } = await params
+  const user = await getSessionUser()
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (!(await canAccessTrip(user, { tripId }))) return NextResponse.json({ error: 'Not found' }, { status: 404 })
   const db = createAdminClient()
 
   const { data: trip } = await db

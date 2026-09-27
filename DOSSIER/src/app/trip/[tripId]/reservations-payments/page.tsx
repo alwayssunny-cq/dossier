@@ -5,6 +5,7 @@ import { getTripPhase } from '@/lib/tripPhase'
 import { DESTINATION_DATA, fetchWeather } from '@/lib/destinationData'
 import QuickLinkCard from '@/components/QuickLinkCard'
 import AboutDestinationCard from '@/components/AboutDestinationCard'
+import { requireTripAccess } from '@/lib/tripAccess'
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
@@ -215,6 +216,7 @@ export default async function ReservationsPaymentsPage({
   searchParams: Promise<{ stage?: string }>
 }) {
   const { tripId } = await params
+  await requireTripAccess(tripId)
   const { stage: stageParam } = await searchParams
   const db = createAdminClient()
 
