@@ -23,7 +23,10 @@ export const getSessionUser = cache(async (): Promise<User | null> => {
   return user
 })
 
-/** client_ids of every traveler whose phone matches. Empty when none do. */
+/**
+ * client_ids of every traveler whose phone matches, primary travelers first,
+ * so [0] is the user's own client. Empty when none match.
+ */
 export const clientIdsForPhone = cache(async (phone: string | null | undefined): Promise<string[]> => {
   const key = last10(phone)
   if (key.length < 10) return []
@@ -32,6 +35,7 @@ export const clientIdsForPhone = cache(async (phone: string | null | undefined):
     .select('client_id, phone')
     .not('phone', 'is', null)
     .not('client_id', 'is', null)
+    .order('is_primary', { ascending: false })
   const rows = (data ?? []) as { client_id: string; phone: string }[]
   return [...new Set(rows.filter(t => last10(t.phone) === key).map(t => t.client_id))]
 })

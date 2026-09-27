@@ -1461,7 +1461,7 @@ function RequestsAdmin() {
   const [updatingId, setUpdatingId] = useState<string | null>(null)
 
   useEffect(() => {
-    fetch('/api/trip-requests')
+    fetch('/api/trip-requests', { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
       .then(r => r.json())
       .then(({ data }) => setRequests((data as TripRequest[]) ?? []))
       .catch(() => {})
@@ -1474,7 +1474,7 @@ function RequestsAdmin() {
       const res = await fetch('/api/trip-requests', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, status }),
+        body: JSON.stringify({ password: ADMIN_PASSWORD, id, status }),
       })
       if (res.ok) {
         setRequests(prev => prev.map(r => r.id === id ? { ...r, status } : r))
