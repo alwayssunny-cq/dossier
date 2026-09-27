@@ -99,13 +99,11 @@ export default async function DashboardPage() {
     .from('travelers').select('*').or(orClause).order('is_primary', { ascending: false })
   const traveler = (travelerRows?.[0] ?? null) as Traveler | null
 
+  // A phone that matches no traveler sees no trips — never everyone's.
   let trips: Trip[] = []
   if (traveler?.client_id) {
     const { data } = await db.from('trips').select('*').eq('client_id', traveler.client_id)
       .order('start_date', { ascending: false })
-    trips = (data as Trip[]) ?? []
-  } else {
-    const { data } = await db.from('trips').select('*').order('start_date', { ascending: false })
     trips = (data as Trip[]) ?? []
   }
 
