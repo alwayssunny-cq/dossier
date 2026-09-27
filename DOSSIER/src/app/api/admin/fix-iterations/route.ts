@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 let _supabase: ReturnType<typeof createAdminClient> | null = null
@@ -13,11 +14,10 @@ const supabase = () => (_supabase ??= createAdminClient())
  * Also resets is_current on experiences/stays/transfers to match
  * their iteration's is_current flag.
  *
- * GET /api/admin/fix-iterations?password=<ADMIN_PASSWORD>
+ * GET /api/admin/fix-iterations  (Authorization: Bearer <ADMIN_PASSWORD>)
  */
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  if (searchParams.get('password') !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

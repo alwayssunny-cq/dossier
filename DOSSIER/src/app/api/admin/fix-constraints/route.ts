@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 
 const PROJECT_REF = 'xuuzzsrilmifzujvmdox'
 
@@ -33,8 +34,7 @@ async function mgmtQuery(token: string, query: string) {
 }
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  if (searchParams.get('password') !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

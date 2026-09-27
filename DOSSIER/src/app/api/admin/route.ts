@@ -1,21 +1,17 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 let _db: ReturnType<typeof createAdminClient> | null = null
 /** Built on first use — see note above; never at import time. */
 const db = () => (_db ??= createAdminClient())
 
-function checkPassword(body: Record<string, unknown>) {
-  return body.password === process.env.ADMIN_PASSWORD
-}
-
 // GET trips list
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const password = searchParams.get('password')
-  if (password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
+  const { searchParams } = new URL(request.url)
 
   const action = searchParams.get('action')
 
@@ -43,7 +39,7 @@ export async function GET(request: Request) {
 // POST: send a message
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}))
-  if (!checkPassword(body)) {
+  if (!isAdminRequest(request, body)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

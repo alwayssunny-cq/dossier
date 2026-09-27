@@ -1,5 +1,5 @@
 /**
- * GET /api/inspect-iteration?password=...&pageId=...
+ * GET /api/inspect-iteration?pageId=...  (Authorization: Bearer <ADMIN_PASSWORD>)
  *
  * Diagnostic endpoint — does NOT write anything.
  * Fetches the iteration page structure from Notion and returns:
@@ -13,6 +13,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { Client } from '@notionhq/client'
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN })
@@ -38,10 +39,9 @@ async function listChildren(blockId: string) {
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const password = searchParams.get('password')
   const pageId   = searchParams.get('pageId')
 
-  if (password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   if (!pageId) {

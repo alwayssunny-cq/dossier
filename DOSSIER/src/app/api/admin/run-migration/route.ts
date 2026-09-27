@@ -10,6 +10,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 
 const MIGRATION_SQL = `
 -- trip_content_pages: Notion content cache for CQ client portal
@@ -43,7 +44,7 @@ function extractProjectRef(supabaseUrl: string): string | null {
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { password?: string }
 
-  if (body.password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request, body)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

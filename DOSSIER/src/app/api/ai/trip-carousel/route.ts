@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { Stay } from '@/lib/types'
 
@@ -129,7 +130,7 @@ For each destination, produce one sentence (max 25 words). Atmospheric, sensory,
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { tripId?: string; password?: string }
 
-  if (body.password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request, body)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

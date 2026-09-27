@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { createAdminClient } from '@/lib/supabase/admin'
 
 let _supabase: ReturnType<typeof createAdminClient> | null = null
@@ -15,7 +16,7 @@ async function columnExists(table: string, column: string): Promise<boolean> {
 
 export async function POST(request: Request) {
   const body = await request.json().catch(() => ({})) as { password?: string }
-  if (body.password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request, body)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

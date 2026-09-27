@@ -560,7 +560,8 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
     resetPreview()
     try {
       const res = await fetch(
-        `/api/list-iterations?password=${encodeURIComponent(ADMIN_PASSWORD)}&pageId=${encodeURIComponent(extractNotionPageId(clientPageId))}`
+        `/api/list-iterations?pageId=${encodeURIComponent(extractNotionPageId(clientPageId))}`,
+        { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } }
       )
       const json = await res.json()
       if (!res.ok) { setIterError(json.error ?? 'Failed to load iterations'); return }
@@ -2019,7 +2020,7 @@ export default function AdminPage() {
 
   // Load trips via admin API (called on auth + manual refresh)
   const fetchTrips = (retries = 1) => {
-    fetch(`/api/admin?password=${encodeURIComponent(ADMIN_PASSWORD)}&action=trips`)
+    fetch('/api/admin?action=trips', { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
       .then(r => r.json())
       .then(({ data }) => setTrips((data as Trip[]) ?? []))
       .catch(() => {
@@ -2113,7 +2114,8 @@ export default function AdminPage() {
       await Promise.all(trips.map(async (trip) => {
         try {
           const res = await fetch(
-            `/api/admin?password=${encodeURIComponent(ADMIN_PASSWORD)}&action=messages&tripId=${trip.id}`
+            `/api/admin?action=messages&tripId=${trip.id}`,
+            { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } }
           )
           if (!res.ok || !active) return
           const { data } = await res.json()
@@ -2131,7 +2133,7 @@ export default function AdminPage() {
   // Load messages for selected trip
   useEffect(() => {
     if (!selectedTrip) return
-    fetch(`/api/admin?password=${encodeURIComponent(ADMIN_PASSWORD)}&action=messages&tripId=${selectedTrip.id}`)
+    fetch(`/api/admin?action=messages&tripId=${selectedTrip.id}`, { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
       .then(r => r.json())
       .then(({ data }) => setMessages((data as Message[]) ?? []))
       .catch(() => {})

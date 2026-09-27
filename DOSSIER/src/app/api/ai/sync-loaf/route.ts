@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminOrCronRequest } from '@/lib/adminAuth'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -350,11 +351,7 @@ async function upsertToSupabase(entries: NotionDbEntry[], thisWeekId: string | n
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({})) as Record<string, string>
-    const authHeader = request.headers.get('authorization')
-    const isAdminAuth = body.password === process.env.ADMIN_PASSWORD
-    const isCronAuth  = process.env.CRON_SECRET && authHeader === `Bearer ${process.env.CRON_SECRET}`
-
-    if (!isAdminAuth && !isCronAuth) {
+    if (!isAdminOrCronRequest(request, body)) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 

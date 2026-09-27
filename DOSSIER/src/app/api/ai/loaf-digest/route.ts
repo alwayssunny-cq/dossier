@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminOrCronRequest } from '@/lib/adminAuth'
 import Anthropic from '@anthropic-ai/sdk'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -217,13 +218,7 @@ export async function POST(request: Request) {
   try {
     // Auth: accept ADMIN_PASSWORD (from sync UI) or CRON_SECRET (from scheduler)
     const body = await request.json().catch(() => ({})) as Record<string, string>
-    const authHeader = request.headers.get('authorization')
-    const cronSecret = process.env.CRON_SECRET
-
-    const isAdminAuth = body.password === process.env.ADMIN_PASSWORD
-    const isCronAuth  = cronSecret && authHeader === `Bearer ${cronSecret}`
-
-    if (!isAdminAuth && !isCronAuth) {
+    if (!isAdminOrCronRequest(request, body)) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 

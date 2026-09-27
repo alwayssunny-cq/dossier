@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { Client } from '@notionhq/client'
 import type { BlockObjectResponse, PartialBlockObjectResponse } from '@notionhq/client/build/src/api-endpoints/blocks'
 
@@ -84,10 +85,9 @@ async function findIterationPages(blockId: string, depth: number): Promise<AnyBl
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url)
-  const password = searchParams.get('password')
   const rawPageId = searchParams.get('pageId') ?? ''
 
-  if (password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
   if (!rawPageId) {

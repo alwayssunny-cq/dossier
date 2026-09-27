@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Client } from '@notionhq/client'
 
@@ -54,10 +55,7 @@ async function createNotionIterationRow(
 // ── Main handler ──────────────────────────────────────────────────────────────
 
 export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url)
-  const password = searchParams.get('password')
-
-  if (password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

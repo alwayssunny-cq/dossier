@@ -16,6 +16,7 @@
  */
 
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { Client } from '@notionhq/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 
@@ -216,7 +217,7 @@ export async function POST(request: Request) {
     type?: string
   }
 
-  if (body.password !== process.env.ADMIN_PASSWORD) {
+  if (!isAdminRequest(request, body)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 

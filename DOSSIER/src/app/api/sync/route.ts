@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server'
+import { isAdminRequest } from '@/lib/adminAuth'
 import { Client, isFullPage } from '@notionhq/client'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { PageObjectResponse } from '@notionhq/client/build/src/api-endpoints/common'
@@ -1307,7 +1308,7 @@ async function syncDatesDestinations() {
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}))
-    if (body.password !== process.env.ADMIN_PASSWORD) {
+    if (!isAdminRequest(request, body)) {
       return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 })
     }
 
