@@ -1,22 +1,16 @@
 import { NextResponse } from 'next/server'
 import { isCronRequest } from '@/lib/adminAuth'
+import { runLoafDigest } from '@/lib/loafDigest'
 
 // Vercel calls this with: Authorization: Bearer <CRON_SECRET>
-// Proxies to /api/ai/loaf-digest using admin password.
+// Runs the digest in-process: an HTTP call back to /api/ai/loaf-digest would
+// be stopped by Vercel Authentication.
 export async function GET(request: Request) {
   if (!isCronRequest(request)) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000'
-
-  const res = await fetch(`${baseUrl}/api/ai/loaf-digest`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ password: process.env.ADMIN_PASSWORD }),
-  })
-
-  const data = await res.json()
+  const { status, body: data } = await runLoafDigest()
 
   console.log('[cron/loaf-digest] completed at', new Date().toISOString(), JSON.stringify(data.story))
 
@@ -25,5 +19,6 @@ export async function GET(request: Request) {
     success: data.success,
     story: data.story,
     notion_page_id: data.notion_page_id,
-  })
+    ...(data.error ? { error: data.error } : {}),
+  }, { status })
 }

@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
 import { isAdminOrCronRequest } from '@/lib/adminAuth'
+import { runNotionSync } from '@/lib/notionSync'
 
 /**
  * Lightweight auto-sync trigger for external schedulers.
  * Requires Authorization: Bearer <ADMIN_PASSWORD or CRON_SECRET>.
- * Forwards to /api/sync internally using the server-side env var.
+ * Runs the sync in-process (no HTTP call back to /api/sync).
  */
 export async function GET(request: Request) {
   if (!isAdminOrCronRequest(request)) {
@@ -12,19 +13,8 @@ export async function GET(request: Request) {
   }
 
   try {
-    // Determine base URL for internal fetch
-    const host = request.headers.get('host') ?? 'localhost:3000'
-    const protocol = host.startsWith('localhost') ? 'http' : 'https'
-    const base = process.env.NEXT_PUBLIC_APP_URL ?? `${protocol}://${host}`
-
-    const res = await fetch(`${base}/api/sync`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ password: process.env.ADMIN_PASSWORD }),
-    })
-
-    const data = await res.json()
-    return NextResponse.json({ ...data, auto: true, ts: new Date().toISOString() })
+    const data = await runNotionSync()
+    return NextResponse.json({ success: true, ...data, auto: true, ts: new Date().toISOString() })
   } catch (err) {
     console.error('auto-sync error:', err)
     return NextResponse.json(
