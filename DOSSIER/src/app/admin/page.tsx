@@ -1,26 +1,30 @@
 'use client'
 
-// Never prerendered. This page builds a Supabase client while rendering, so
-// prerendering it at build time makes the build depend on the runtime
-// environment being present — the same fragility that stopped every
-// Git-triggered deploy of this site. It is an interactive, gated screen with
-// nothing worth prerendering.
+// Never prerendered. It is an interactive, gated screen with nothing worth
+// prerendering.
 export const dynamic = 'force-dynamic'
 
 import { useState, useEffect, useRef } from 'react'
-import { createClient } from '@/lib/supabase/client'
 
 import type { Trip, Message, TripRequest } from '@/lib/types'
 import CQLogo from '@/components/CQLogo'
 
-// Built on first use. Calling createClient() while a component renders means
-// it also runs during the server render of this page, where there is no
-// browser environment — which is what made the build depend on runtime
-// configuration and fail wherever a .env.local did not happen to exist.
-let _sb: ReturnType<typeof createClient> | null = null
-const sb = () => (_sb ??= createClient())
+// The password typed at login, once /api/admin/login has accepted it. Held in
+// memory only — never stored — and sent with each admin API call.
+let ADMIN_PASSWORD = ''
 
-const ADMIN_PASSWORD = 'cqadmin2026'
+// Database reads and writes go through /api/admin/data: RLS blocks the
+// browser's anon client, and the service-role key must stay on the server.
+async function adminData<T = Record<string, unknown>>(action: string, payload: Record<string, unknown>): Promise<T> {
+  const res = await fetch('/api/admin/data', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ password: ADMIN_PASSWORD, action, ...payload }),
+  })
+  const json = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`)
+  return json as T
+}
 
 // ── Shared helpers ─────────────────────────────────────────────────────────────
 
@@ -78,14 +82,12 @@ function FinancialsAdmin({ trips, onRunSync }: { trips: Trip[]; onRunSync: () =>
   const loadSummary = async (tripId: string) => {
     setLoadingData(true); setSummary(null)
     try {
-      const [qRes, pRes, iRes] = await Promise.all([
-        sb().from('quotations').select('total_amount, currency').eq('trip_id', tripId),
-        sb().from('payments').select('amount, currency').eq('trip_id', tripId).eq('direction', 'inbound'),
-        sb().from('invoices').select('id').eq('trip_id', tripId),
-      ])
-      const qs = (qRes.data ?? []) as { total_amount: number | null; currency: string | null }[]
-      const ps = (pRes.data ?? []) as { amount: number; currency: string | null }[]
-      const is = (iRes.data ?? []) as { id: string }[]
+      const fin = await adminData<{ quotations: unknown[] | null; payments: unknown[] | null; invoices: unknown[] | null }>(
+        'financial-summary', { tripId },
+      )
+      const qs = (fin.quotations ?? []) as { total_amount: number | null; currency: string | null }[]
+      const ps = (fin.payments ?? []) as { amount: number; currency: string | null }[]
+      const is = (fin.invoices ?? []) as { id: string }[]
       const currency = qs[0]?.currency ?? ps[0]?.currency ?? 'USD'
       setSummary({
         quotations:  qs.length,
@@ -436,7 +438,7 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
     if (!selectedTripId || !coverImgUrl.trim()) return
     setSavingImg(true)
     try {
-      await sb().from('trips').update({ cover_image_url: coverImgUrl.trim() }).eq('trip_id', selectedTripId)
+      await adminData('update-trip', { tripId: selectedTripId, field: 'cover_image_url', value: coverImgUrl.trim() })
       setImgSaved(true)
       setTimeout(() => setImgSaved(false), 3000)
     } finally {
@@ -452,14 +454,9 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
     setImgUrlsEdits({})
     setNewUrlInputs({})
     try {
-      const { data: tripData } = await sb().from('trips').select('id').eq('trip_id', tripId).maybeSingle()
-      if (!tripData) return
-      const tripUuid = (tripData as { id: string }).id
-
-      const [{ data: exps }, { data: stys }] = await Promise.all([
-        sb().from('experiences').select('id, experience_id, title, image_url').eq('trip_id', tripUuid).eq('is_active_version', true).order('sort_order', { ascending: true }),
-        sb().from('stays').select('id, stay_id, property_name, image_url, image_urls').eq('trip_id', tripUuid).eq('is_active_version', true).order('sort_order', { ascending: true }),
-      ])
+      const { experiences: exps, stays: stys } = await adminData<{ experiences: unknown[] | null; stays: unknown[] | null }>(
+        'image-items', { tripId },
+      )
 
       const items: ImgItem[] = [
         ...((exps ?? []) as { id: string; experience_id: string; title: string; image_url: string | null }[]).map(e => ({
@@ -494,11 +491,11 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
         // For stays: save image_urls array; derive image_url from first entry
         const urls = (imgUrlsEdits[item.id] ?? []).filter(u => u.trim())
         const primary = urls[0] ?? null
-        await sb().from('stays').update({ image_url: primary, image_urls: urls.length ? urls : null }).eq('id', item.id)
+        await adminData('update-image', { table: 'stays', id: item.id, image_url: primary, image_urls: urls })
         setImgItems(prev => prev.map(i => i.id === item.id ? { ...i, image_url: primary, image_urls: urls.length ? urls : null } : i))
       } else {
         const url = imgEdits[item.id]?.trim() ?? ''
-        await sb().from(item.table).update({ image_url: url || null }).eq('id', item.id)
+        await adminData('update-image', { table: item.table, id: item.id, image_url: url || null })
         setImgItems(prev => prev.map(i => i.id === item.id ? { ...i, image_url: url || null } : i))
       }
     } finally {
@@ -527,14 +524,7 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
     if (!tripId) return
     setLoadingHistory(true)
     try {
-      // First get trip uuid
-      const { data: tripData } = await sb().from('trips').select('id').eq('trip_id', tripId).maybeSingle()
-      if (!tripData) { setLoadingHistory(false); return }
-      const { data } = await sb()
-        .from('experiences')
-        .select('iteration_version')
-        .eq('trip_id', (tripData as { id: string }).id)
-        .not('iteration_version', 'is', null)
+      const { data } = await adminData<{ data: unknown[] | null }>('sync-history', { tripId })
       if (!data) { setLoadingHistory(false); return }
       const counts: Record<string, number> = {}
       for (const row of data as { iteration_version: string | null }[]) {
@@ -701,7 +691,8 @@ function DrawingBoardSync({ trips, onRefreshTrips }: { trips: Trip[]; onRefreshT
     setSavingDbUrl(true)
     setDbUrlError('')
     try {
-      const { error } = await sb().from('trips').update({ drawing_board_url: drawingBoardUrl.trim() }).eq('trip_id', effectiveTripId)
+      const error = await adminData('update-trip', { tripId: effectiveTripId, field: 'drawing_board_url', value: drawingBoardUrl.trim() })
+        .then(() => null, (e: Error) => e)
       if (error) {
         if (error.message.toLowerCase().includes('column') || error.message.toLowerCase().includes('does not exist')) {
           setDbUrlError('Column missing — run in Supabase SQL Editor: ALTER TABLE trips ADD COLUMN IF NOT EXISTS drawing_board_url TEXT;')
@@ -1621,13 +1612,9 @@ function ContentSyncAdmin({ trips }: { trips: Trip[] }) {
     let active = true
     setDatesSync(SYNC_INITIAL)
     setStaySync(SYNC_INITIAL)
-    Promise.resolve(
-      sb()
-        .from('trip_content_pages')
-        .select('type, synced_at')
-        .eq('trip_id', selectedTrip.id)
+    adminData('content-pages', { tripUuid: selectedTrip.id })
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    ).then(({ data }: { data: any }) => {
+    .then(({ data }: { data?: any }) => {
       if (!active) return
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const map: Record<string, any> = {}
@@ -2010,11 +1997,21 @@ export default function AdminPage() {
   const [loafSyncResult, setLoafSyncResult] = useState<{ added: number; stories: string[]; message: string } | null>(null)
   const loafToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) {
-      setAuthed(true)
-    } else {
-      setPwError('Incorrect password.')
+  const handleLogin = async () => {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        ADMIN_PASSWORD = password
+        setAuthed(true)
+      } else {
+        setPwError('Incorrect password.')
+      }
+    } catch {
+      setPwError('Network error. Is the server running?')
     }
   }
 
@@ -2139,19 +2136,17 @@ export default function AdminPage() {
       .catch(() => {})
   }, [selectedTrip])
 
-  // Realtime for selected trip
+  // Poll the selected trip's thread. Realtime can't be used here: RLS keeps
+  // the browser's anon client from seeing messages.
   useEffect(() => {
     if (!selectedTrip) return
-    const channel = sb()
-      .channel(`admin:messages:${selectedTrip.id}`)
-      .on('postgres_changes', {
-        event: 'INSERT', schema: 'public', table: 'messages',
-        filter: `trip_id=eq.${selectedTrip.id}`,
-      }, (payload) => {
-        setMessages(prev => [...prev, payload.new as Message])
-      })
-      .subscribe()
-    return () => { sb().removeChannel(channel) }
+    const id = setInterval(() => {
+      fetch(`/api/admin?action=messages&tripId=${selectedTrip.id}`, { headers: { Authorization: `Bearer ${ADMIN_PASSWORD}` } })
+        .then(r => r.json())
+        .then(({ data }) => { if (data) setMessages(data as Message[]) })
+        .catch(() => {})
+    }, 30 * 1000)
+    return () => clearInterval(id)
   }, [selectedTrip])
 
   // Scroll to bottom
@@ -2162,7 +2157,7 @@ export default function AdminPage() {
   const handleSend = async () => {
     if (!content.trim() || !selectedTrip || sending) return
     setSending(true)
-    await fetch('/api/admin', {
+    const res = await fetch('/api/admin', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -2173,7 +2168,9 @@ export default function AdminPage() {
         message_type: messageType,
         content: content.trim(),
       }),
-    })
+    }).catch(() => null)
+    const sent = res?.ok ? ((await res.json()).data as Message | undefined) : undefined
+    if (sent) setMessages(prev => prev.some(m => m.id === sent.id) ? prev : [...prev, sent])
     setSending(false)
     setContent('')
   }
