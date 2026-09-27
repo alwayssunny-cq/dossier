@@ -835,7 +835,10 @@ async function syncDocuments() {
 }
 
 async function syncNewsletter() {
-  const pages = await queryAll(process.env.NOTION_NEWSLETTER_DB!)
+  const dbId = process.env.NOTION_NEWSLETTER_DB
+  if (!dbId) return 0
+
+  const pages = await queryAll(dbId)
   let upserted = 0
   for (const p of pages) {
     const props = p.properties
@@ -1333,26 +1336,38 @@ export async function POST(request: Request) {
     }
 
     const results: Record<string, number> = {}
+    const errors: Record<string, string> = {}
 
-    results.loaf              = await syncLoaf()
-    results.clients           = await syncClients()
-    results.travelers         = await syncTravelers()
-    results.destination_info  = await syncDestinationInfo()
-    results.dates_destinations = await syncDatesDestinations()
-    results.trips             = await syncTrips()
-    results.trip_travelers = await syncTripTravelers()
-    results.experiences    = await syncExperiences()
-    results.stays          = await syncStays()
-    results.transfers      = await syncTransfers()
-    results.messages       = await syncMessages()
-    results.documents      = await syncDocuments()
-    results.newsletter     = await syncNewsletter()
-    results.quotations     = await syncQuotations()
-    results.payments       = await syncPayments()
-    results.invoices       = await syncInvoices()
-    results.daily_briefs   = await syncDailyBriefs()
-    results.recommendations = await syncRecommends()
-    results.suggestions = await syncSuggestions()
+    // Each table syncs on its own: one failure is recorded and the rest carry on.
+    const steps: [string, () => Promise<number>][] = [
+      ['loaf', syncLoaf],
+      ['clients', syncClients],
+      ['travelers', syncTravelers],
+      ['destination_info', syncDestinationInfo],
+      ['dates_destinations', syncDatesDestinations],
+      ['trips', syncTrips],
+      ['trip_travelers', syncTripTravelers],
+      ['experiences', syncExperiences],
+      ['stays', syncStays],
+      ['transfers', syncTransfers],
+      ['messages', syncMessages],
+      ['documents', syncDocuments],
+      ['newsletter', syncNewsletter],
+      ['quotations', syncQuotations],
+      ['payments', syncPayments],
+      ['invoices', syncInvoices],
+      ['daily_briefs', syncDailyBriefs],
+      ['recommendations', syncRecommends],
+      ['suggestions', syncSuggestions],
+    ]
+    for (const [table, run] of steps) {
+      try {
+        results[table] = await run()
+      } catch (err) {
+        console.error(`[sync/${table}]`, err)
+        errors[table] = err instanceof Error ? err.message : String(err)
+      }
+    }
 
     // Post-sync deduplication: catch anything that slipped through
     const postCleaned = {
@@ -1361,7 +1376,7 @@ export async function POST(request: Request) {
       transfers:   await dedupeTable('transfers', ['trip_id', 'from_location', 'to_location'], 'id,trip_id,from_location,to_location'),
     }
 
-    return NextResponse.json({ success: true, synced_at: new Date().toISOString(), results, preCleaned, postCleaned })
+    return NextResponse.json({ success: true, synced_at: new Date().toISOString(), results, errors, preCleaned, postCleaned })
   } catch (error) {
     console.error('Sync error:', error)
     return NextResponse.json(
