@@ -34,7 +34,7 @@ CREATE INDEX IF NOT EXISTS idx_trip_content_pages_type    ON trip_content_pages(
 
 function extractProjectRef(supabaseUrl: string): string | null {
   try {
-    const host = new URL(supabaseUrl).hostname      // e.g. xuuzzsrilmifzujvmdox.supabase.co
+    const host = new URL(supabaseUrl).hostname      // <project-ref>.supabase.co
     return host.split('.')[0] ?? null
   } catch {
     return null

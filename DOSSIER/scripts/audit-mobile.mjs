@@ -13,12 +13,13 @@ import { readFileSync, writeFileSync } from 'fs'
 import { chromium } from 'playwright'
 
 const SHOTS='/private/tmp/claude-501/-Users-jensojose-cq-client-portal/87e00246-c238-4bc1-b48c-d6dbcd2f31b6/scratchpad/shots2'
-const env={}; readFileSync('.env.local','utf8').split('\n').forEach(l=>{const m=l.match(/^([A-Z_]+)=(.*)$/); if(m) env[m[1]]=m[2].trim()})
+const env={}; readFileSync('.env.local','utf8').split('\n').forEach(l=>{const m=l.trim().match(/^([A-Z_]+)=(.*)$/); if(m) env[m[1]]=m[2].trim()})
+if(!env.AUDIT_PHONE||!env.AUDIT_PASSWORD){console.error('Set AUDIT_PHONE and AUDIT_PASSWORD in .env.local (a test login for the audit).');process.exit(1)}
 const URL_=env.NEXT_PUBLIC_SUPABASE_URL, REF=URL_.replace('https://','').split('.')[0]
 const SITE=process.env.TARGET||'http://localhost:3000'
 const session=await fetch(`${URL_}/auth/v1/token?grant_type=password`,{method:'POST',
   headers:{apikey:env.NEXT_PUBLIC_SUPABASE_ANON_KEY,'Content-Type':'application/json'},
-  body:JSON.stringify({phone:'+919008116761',password:'Audit-'+REF.slice(0,6)+'!'})}).then(r=>r.json())
+  body:JSON.stringify({phone:env.AUDIT_PHONE,password:env.AUDIT_PASSWORD})}).then(r=>r.json())
 if(!session.access_token){console.error('no session',session);process.exit(1)}
 
 const ROUTES=(process.env.ROUTES||[

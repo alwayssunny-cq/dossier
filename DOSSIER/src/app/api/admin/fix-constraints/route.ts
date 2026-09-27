@@ -1,7 +1,14 @@
 import { NextResponse } from 'next/server'
 import { isAdminRequest } from '@/lib/adminAuth'
 
-const PROJECT_REF = 'xuuzzsrilmifzujvmdox'
+/** The project ref is the subdomain of NEXT_PUBLIC_SUPABASE_URL (<ref>.supabase.co). */
+function extractProjectRef(supabaseUrl: string): string | null {
+  try {
+    return new URL(supabaseUrl).hostname.split('.')[0] || null
+  } catch {
+    return null
+  }
+}
 
 // Query current unique constraints on the three tables
 const QUERY_SQL = `
@@ -20,9 +27,9 @@ ALTER TABLE stays       DROP CONSTRAINT IF EXISTS unique_stay_per_trip;
 ALTER TABLE transfers   DROP CONSTRAINT IF EXISTS unique_transfer_per_trip;
 `.trim()
 
-async function mgmtQuery(token: string, query: string) {
+async function mgmtQuery(token: string, projectRef: string, query: string) {
   const res = await fetch(
-    `https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query`,
+    `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
     {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
@@ -39,8 +46,9 @@ export async function GET(request: Request) {
   }
 
   const token = process.env.SUPABASE_ACCESS_TOKEN
+  const projectRef = extractProjectRef(process.env.NEXT_PUBLIC_SUPABASE_URL ?? '')
 
-  if (!token) {
+  if (!token || !projectRef) {
     return NextResponse.json({
       success: false,
       action: 'manual_sql_required',
@@ -59,7 +67,7 @@ export async function GET(request: Request) {
   }
 
   // ── Step 1: Query what constraints actually exist right now ──────────────────
-  const { ok: qOk, body: qBody } = await mgmtQuery(token, QUERY_SQL)
+  const { ok: qOk, body: qBody } = await mgmtQuery(token, projectRef, QUERY_SQL)
 
   type ConstraintRow = { constraint_name: string; table_name: string }
   const allConstraints: ConstraintRow[] = qOk && Array.isArray(qBody) ? qBody : []
@@ -97,7 +105,7 @@ export async function GET(request: Request) {
     .map(c => `ALTER TABLE ${c.table_name} DROP CONSTRAINT IF EXISTS ${c.constraint_name};`)
     .join('\n')
 
-  const { ok: dropOk, status: dropStatus, body: dropBody } = await mgmtQuery(token, targetedDropSql)
+  const { ok: dropOk, status: dropStatus, body: dropBody } = await mgmtQuery(token, projectRef, targetedDropSql)
 
   if (!dropOk) {
     return NextResponse.json({
