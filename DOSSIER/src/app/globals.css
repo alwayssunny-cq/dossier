@@ -1,0 +1,1005 @@
+@import "tailwindcss";
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   CQ DESIGN SYSTEM
+   Source of truth: docs/brand/CQ-BRAND-BOOK.md
+
+   Four colours. Three type tiers. Nothing else.
+   Contrast ratios in the comments are measured against Milky Mist and were
+   verified with a WCAG solver, not estimated.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* ── Fonts ─────────────────────────────────────────────────────────────────── */
+
+@font-face {
+  font-family: 'Tan Mon Cheri';
+  src: url('/fonts/tan-mon-cheri.ttf') format('truetype');
+  font-weight: normal; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: 'The Seasons';
+  src: url('/fonts/TheSeasons-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'CQ Optima';
+  src: url('/fonts/Optima_Roman.ttf') format('truetype');
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+
+/* Rule 3 of the book asks for Optima Bold on sub-headers, and we hold no bold
+   file. Optima ships with macOS and iOS, so local() reaches the real cut on
+   Apple devices without redistributing a licensed face. Elsewhere this face
+   does not resolve and .cq-subhead falls back to synthesising weight — see
+   the note there. The fix that removes the split is a licensed Optima Bold
+   webfont dropped into /public/fonts. */
+@font-face {
+  font-family: 'CQ Optima';
+  src: local('Optima Bold'), local('Optima-Bold'), local('OptimaBold');
+  font-weight: 700; font-style: normal; font-display: swap;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LAYER 1 — PRIMITIVES
+   The four brand colours. These never change and are never used directly by a
+   component; everything goes through the semantic layer below.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --mist:   #FFFCF8;   /* Milky Mist   */
+  --night:  #08070E;   /* Night Sky    */
+  --fade:   #DCD6CD;   /* Fade D'Souza */
+  --borges: #706E56;   /* Borges       */
+
+  /* Channel triplets so the semantic layer can build alpha steps */
+  --mist-rgb:   255 252 248;
+  --night-rgb:  8 7 14;
+  --fade-rgb:   220 214 205;
+  --borges-rgb: 112 110 86;
+
+  /* ── Spacing — base-4 ──────────────────────────────────────────────────── */
+  --space-1:  0.25rem;
+  --space-2:  0.5rem;
+  --space-3:  0.75rem;
+  --space-4:  1rem;
+  --space-5:  1.25rem;
+  --space-6:  1.5rem;
+  --space-8:  2rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-16: 4rem;
+  --space-20: 5rem;
+  --space-24: 6rem;
+  --space-32: 8rem;
+
+  --radius-sm:   2px;
+  --radius-md:   4px;
+  --radius-lg:   8px;
+  --radius-full: 9999px;
+
+  --z-base: 0;
+  --z-raised: 1;
+  --z-dropdown: 10;
+  --z-sticky: 20;
+  --z-overlay: 30;
+  --z-modal: 40;
+  --z-toast: 60;
+  --z-grain: 9999;
+
+  /* ── Motion ────────────────────────────────────────────────────────────────
+     Unhurried. The brand is calm and steady, so nothing snaps.               */
+  --duration-fast:   160ms;
+  --duration-normal: 280ms;
+  --duration-slow:   520ms;
+  --duration-veil:   800ms;
+  --ease-default: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --ease-veil:    cubic-bezier(0.25, 0.46, 0.45, 0.94);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LAYER 2 — SEMANTICS
+   Role-based. Components reference only these.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Surfaces */
+  --color-surface:         var(--mist);
+  --color-surface-sunken:  rgb(var(--fade-rgb) / 0.34);
+  --color-surface-raised:  rgb(var(--fade-rgb) / 0.18);
+  --color-surface-inverse: var(--night);
+
+  /* The two panel tints above are translucent, which is what lets them sit on
+     Milky Mist without a second colour. Over anything else — a modal scrim,
+     a photograph — they take on what is behind and go muddy. Use these when
+     the surface must hold its own colour regardless of backdrop. */
+  --color-panel:        #F3EFE9;   /* sunken, resolved on Milky Mist */
+  --color-panel-raised: #F8F5F1;   /* raised, resolved on Milky Mist */
+
+  /* Text — every step below is AA or better on Milky Mist */
+  /* Text colours are solid, not ink at an alpha over Mist.
+     
+     Every ratio below used to be measured against Mist, and every one of them
+     held — on Mist. The dossier also sets text on Fade, on panel, on sunken
+     panel and on Fade chips, and an alpha colour gets lighter as its ground
+     gets darker: Borges is 5.06:1 on Mist and 3.24:1 on a Fade chip, so the
+     same token passed in one place and failed in another. Solid values behave
+     identically on every ground the dossier uses, and the worst case is
+     stated. Hues are the brand's; only the value moved.
+     
+     Borges itself is untouched and still draws rules, marks and the large
+     chapter numerals, where 3:1 is the bar and it clears it. */
+  --color-text:           var(--night);                      /* 19.61:1 on Mist        */
+  --color-text-secondary: #39383D;                           /*  7.25:1 worst ground   */
+  --color-text-muted:     #575559;                           /*  4.58:1 worst ground   */
+  --color-text-faint:     #575559;                           /*  the floor — same value */
+  --color-text-inverse:   var(--mist);
+  --color-text-accent:    #595746;                           /*  4.54:1 worst ground   */
+
+  /* Lines. `interactive` is the only one that clears 3:1 — use it for any
+     border that is the sole definition of a control. The others are
+     decorative and must never be load-bearing. */
+  --color-border-interactive: rgb(var(--night-rgb) / 0.44);  /* 3.02:1 */
+  --color-rule-strong:        rgb(var(--night-rgb) / 0.20);
+  --color-rule:               rgb(var(--night-rgb) / 0.12);
+  --color-rule-faint:         rgb(var(--night-rgb) / 0.07);
+  --color-focus:              var(--night);
+
+  /* ── Type tiers ────────────────────────────────────────────────────────── */
+  --font-display: 'Tan Mon Cheri', Georgia, 'Times New Roman', serif;
+  --font-header:  'The Seasons', Georgia, 'Times New Roman', serif;
+  --font-body:    'CQ Optima', Optima, 'Trebuchet MS', 'Gill Sans', sans-serif;
+
+  --leading-t0:      0.95;
+  --leading-t1:      1.15;
+  --leading-subhead: 1.35;
+  --leading-body:    1.5;   /* the book's minimum */
+
+  --tracking-t0:    0.01em;
+  --tracking-micro: 0.16em;
+
+  --header-h: 58px;   /* the sticky tab bar in the trip layout */
+
+  /* ── Vertical rhythm ──────────────────────────────────────────────────────
+     Three gaps, and they must stay clearly different sizes or the hierarchy
+     stops reading. A section title sitting 32px above its first chapter looks
+     like a label attached to that chapter rather than a heading over all of
+     them — which is exactly how it went wrong.
+
+     Each step is roughly 1.5× the one below it, so the eye can rank them
+     without measuring. */
+  --gap-section:  6rem;    /* 96px — between one section and the next        */
+  --gap-opening:  3.5rem;  /* 56px — a section title to its first child      */
+  --gap-chapter:  2.5rem;  /* 40px — one chapter to the next inside a section */
+
+  /* Height the fixed bottom navigation occupies. Zero on desktop, where the
+     tab bar sits at the top instead; anything anchored to the bottom of the
+     viewport adds this so it never lands underneath the bar. */
+  --tabbar-h: 0px;
+  /* The phone's top bar: back, trip name, stage. Zero on desktop. */
+  --tripbar-h: 0px;
+
+  /* Block spacing, named by its desktop value. Ninety inline styles across the
+     dossier hardcoded numbers like '72px' and '104px', which is a reasonable
+     gap on a 1440px page and a third of the screen on a 390px one. Routing
+     them through tokens lets the phone breathe differently from the desktop
+     without either having to be redesigned. Desktop values are unchanged. */
+  --pad-40: 40px;
+  --pad-48: 48px;
+  --pad-56: 56px;
+  --pad-72: 72px;
+  --pad-96: 96px;
+
+  /* The dashboard trip card. A 21:9 frame is 150px tall on a phone, and it
+     has to hold a status, a place, a Tier 1 title, a rule and the dates —
+     which is why the status ended up sitting on top of the country name. The
+     phone gets a taller frame; the desktop keeps the cinematic one. */
+  --trip-card-aspect: 21 / 9;
+
+  /* The trip hero. 21:9 is 167px on a 390px screen, and the block of text is
+     anchored to its foot: destination, a Tier 1 title and the dates come to
+     about 100px, which puts the top of that block at y=23 — straight through
+     the back arrow sitting at y=12. The two collided. A taller frame and a
+     smaller inset give each its own band. */
+  --hero-aspect: 21 / 9;
+  --hero-inset: 44px;
+
+  /* How much room the last thing on a page needs so the floating controls
+     never come to rest on top of it. Zero on desktop, where they sit clear of
+     the column. */
+  --dock-clear: 0px;
+  /* The chapter number column and the spine beneath it. */
+  --chapter-gutter: 52px;
+}
+
+/* The rhythm above is set for a 1440px page. Carried unchanged onto a 390px
+   phone it spends most of the screen on air: four steps of 96px is more than
+   a third of the viewport before a word is read, which is what turned every
+   page into a scroll marathon. The steps keep their 1.5× relationship — the
+   eye can still rank them — but the whole scale is pulled in by a third. */
+@media (max-width: 767px) {
+  :root {
+    --gap-section: 3.25rem;   /* 52px */
+    --gap-opening: 2rem;      /* 32px */
+    --gap-chapter: 1.5rem;    /* 24px */
+    --tabbar-h: 60px;
+    --tripbar-h: 52px;
+    --pad-40: 24px;
+    --pad-48: 28px;
+    --pad-56: 32px;
+    --pad-72: 38px;
+    --pad-96: 46px;
+    --trip-card-aspect: 16 / 10;
+    --hero-aspect: 16 / 10;
+    --hero-inset: 20px;
+    --dock-clear: 132px;
+    --header-h: 0px;          /* the tab bar moved to the bottom on phones */
+    --chapter-gutter: 26px;   /* 52px is a seventh of a 390px screen */
+  }
+}
+
+/* A section opener: title, a full-width rule, then the opening gap. Applied
+   as a class so every section across the dossier resolves to the same rhythm
+   rather than each page inventing its own margin. */
+.cq-section-open {
+  margin-bottom: var(--gap-opening);
+}
+.cq-section-open::after {
+  content: '';
+  display: block;
+  height: 1px;
+  background: var(--color-rule-strong);
+  margin-top: var(--space-6);
+}
+
+/* ── Tailwind bridge ───────────────────────────────────────────────────────── */
+
+/* The type scale lives in @theme so Tailwind emits real utilities for it —
+   text-t0, text-t1, text-subhead, text-body, text-caption — while the same
+   names stay available to hand-written CSS as var(--text-*).
+
+   There is deliberately nothing below --text-caption. If a design seems to
+   need 10px, it needs less content, not smaller text. */
+/* One modular scale at a major third (1.25), which the book's own numbers
+   already sit on: 13 · 16 · 20 · 25 · 32–40 · 64+. Body is 16, and 16 ÷ 1.25
+   is 12.8, which is the 13px caption. 25 × 1.25 is 31.25, which is the bottom
+   of the Seasons tier. Nothing outside these steps should exist. */
+@theme {
+  --text-t0:         clamp(4rem, 8.5vw, 8rem);   /* Tier 0 — never below 64px  */
+  /* Tier 1 has room for two steps inside the book's 32–40px band, and it needs
+     them: a section title and the place names beneath it were both landing on
+     the same size, so the page had no ladder. The section opener takes the top
+     of the band, its places the bottom. */
+  /* The rungs below Tier 1 were fixed while Tier 1 itself was fluid, so the
+     ladder closed up as the screen narrowed: at 390px the page title landed
+     on 36 and a section opener on 32, an eleven-per-cent step that reads as
+     an accident rather than a hierarchy. Every rung is fluid now and they
+     compress at different rates, so the ladder holds its shape at 390 —
+     36 / 27 / 22 — and opens out to 40 / 32 / 25 on a wide screen. */
+  --text-t1:         clamp(2.25rem, 3.4vw, 2.5rem);                  /* 36–40 */
+  --text-t1-sm:      clamp(1.6875rem, 1.5715rem + 0.4762vw, 2rem);   /* 27–32 */
+  --text-subhead-lg: clamp(1.375rem, 1.3054rem + 0.2857vw, 1.5625rem); /* 22–25 */
+  --text-subhead:    1.25rem;                    /* 20px — Optima Bold         */
+  --text-body:       1rem;                       /* Tier 2 — the body floor    */
+  --text-caption:    0.8125rem;                  /* 13px — the only step down  */
+
+  /* Not a scale step. Monospace runs optically larger than Optima at the same
+     size, so inline code is set relative to whatever it sits inside. */
+  --text-code:       0.9em;
+}
+
+@theme inline {
+  --color-background: var(--color-surface);
+  --color-foreground: var(--color-text);
+
+  /* Primitives, for the rare case a component needs the raw brand colour */
+  --color-mist:   var(--mist);
+  --color-night:  var(--night);
+  --color-fade:   var(--fade);
+  --color-borges: var(--borges);
+
+  /* Semantic utilities. These are what components should use:
+     text-ink, text-ink-muted, bg-sunken, border-rule, and so on. */
+  --color-ink:           var(--color-text);
+  --color-ink-secondary: var(--color-text-secondary);
+  --color-ink-muted:     var(--color-text-muted);
+  --color-ink-faint:     var(--color-text-faint);
+  --color-ink-inverse:   var(--color-text-inverse);
+  --color-accent:        var(--color-text-accent);
+
+  --color-surface-base: var(--color-surface);
+  --color-sunken:       var(--color-surface-sunken);
+  --color-raised:       var(--color-surface-raised);
+  --color-inverse:      var(--color-surface-inverse);
+
+  --color-rule:        var(--color-rule);
+  --color-rule-strong: var(--color-rule-strong);
+  --color-rule-faint:  var(--color-rule-faint);
+  --color-edge:        var(--color-border-interactive);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LEGACY ALIASES
+   The codebase still carries older token names. These remap onto the correct
+   brand values so the palette is right everywhere immediately, while files are
+   migrated to the semantic names one at a time. Delete this block once the
+   migration is finished — nothing new should reference it.
+
+   Note the retirements: burgundy and terra were invented accents that the
+   brand book does not contain. They now resolve to Night Sky and Borges.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  --cq-bg:          var(--color-surface);
+  --cq-surface:     var(--color-surface-sunken);
+  --cq-surface-2:   var(--color-surface-raised);
+  --cq-cream:       var(--color-text);
+  --cq-cream-muted: var(--color-text-secondary);
+  --cq-gray:        var(--color-text-muted);
+  --cq-ochre:       var(--color-text-accent);
+  --cq-ochre-light: var(--color-text-accent);
+  --cq-burgundy:    var(--color-text);
+  --cq-terra:       var(--color-text-accent);
+  --cq-forest:      var(--color-text);
+  --cq-border:      var(--color-rule);
+  --cq-border-lt:   var(--color-rule-faint);
+
+  --badge-update-bg:   rgb(var(--night-rgb) / 0.06);
+  --badge-update-text: var(--color-text-secondary);
+  --badge-feedback-bg:   rgb(var(--borges-rgb) / 0.12);
+  --badge-feedback-text: var(--color-text-accent);
+  --badge-request-bg:   rgb(var(--night-rgb) / 0.08);
+  --badge-request-text: var(--color-text);
+  --badge-note-bg:   rgb(var(--fade-rgb) / 0.40);
+  --badge-note-text: var(--color-text-muted);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   BASE
+   ═════════════════════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  /* Nothing is faked by default. .cq-subhead re-enables weight synthesis for
+     itself where no real Optima Bold is installed; style synthesis stays off
+     everywhere so Seasons is never slanted by the browser. */
+  font-synthesis: none;
+  font-feature-settings: 'kern' 1, 'liga' 1, 'calt' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  position: relative;
+}
+
+/* Figures that sit in columns or tick over — prices, counts, countdowns —
+   need fixed-width digits or the column goes ragged as values change. */
+.cq-tabular { font-variant-numeric: tabular-nums; }
+
+::selection { background: rgb(var(--night-rgb) / 0.12); }
+
+/* Placeholders read as prompts, not as answers. Firefox dims them further on
+   its own, so opacity is pinned rather than left to the browser. */
+input::placeholder,
+textarea::placeholder {
+  color: var(--color-text-faint);
+  opacity: 1;
+}
+
+:focus-visible {
+  outline: 2px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+/* Film grain — analog warmth. Sits above content, catches no clicks. */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: var(--z-grain);
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-size: 200px 200px;
+  background-repeat: repeat;
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   TYPE TIERS
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* Tier 0 — TAN Mon Cheri. Used like a unicorn.
+   The guardrails are enforced here rather than left to discipline:
+   caps are forced off, and the padding buys the negative space the book asks
+   for. Never put a Tier 1 header immediately after this. */
+.cq-t0 {
+  font-family: var(--font-display);
+  font-size: var(--text-t0);
+  line-height: var(--leading-t0);
+  letter-spacing: var(--tracking-t0);
+  text-transform: none !important;
+  padding-block: var(--space-16);
+  text-wrap: balance;
+}
+
+/* Tier 1 — The Seasons. Structural titling and quotes.
+   
+   Three rungs, not two. Every section opener in the dossier rendered at
+   --text-t1, and so did the page's own title, so seven headings on the
+   dashboard were all 40px and the page had no ladder at all — the editorial
+   rules call that out directly ("Make every heading the same size" — never).
+   Page title 40, section opener 32, a chapter or place inside one 25, and
+   Optima's subhead at 20 beneath all of them. */
+.cq-t1,
+.cq-t1-sm,
+.cq-t2 {
+  font-family: var(--font-header);
+  font-weight: 700;
+  line-height: var(--leading-t1);
+  text-wrap: balance;
+}
+.cq-t1    { font-size: var(--text-t1); }
+.cq-t1-sm { font-size: var(--text-t1-sm); }
+.cq-t2    { font-size: var(--text-subhead-lg); }
+
+/* The vertical hairline that divides a prose column from the quiet column of
+   metadata beside it. Collapses on narrow screens, where the columns stack and
+   a vertical rule would be meaningless. */
+.cq-col-rule { border-top: 1px solid var(--color-rule); padding-top: var(--space-5); }
+/* 768px, matching Tailwind's md — the grids that use this switch to two
+   columns there, and the rule has to turn with them or the aside shows a top
+   border while sitting in a side column. */
+@media (min-width: 768px) {
+  .cq-col-rule {
+    border-top: 0;
+    border-left: 1px solid var(--color-rule);
+    padding-top: 0;
+    padding-left: var(--space-8);
+  }
+}
+
+/* Sub-headers — Optima Bold, per rule 3. Seasons is reserved for structural
+   titling and is not spent here.
+
+   font-synthesis is re-enabled for weight on this class alone. On Apple
+   devices the local() face above supplies the real bold and nothing is
+   synthesised; elsewhere the browser thickens Optima Roman, which is not as
+   good but keeps the hierarchy intact. Style synthesis stays off everywhere,
+   so Seasons is never faux-italicised. */
+.cq-subhead,
+.cq-subhead-lg {
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-synthesis: weight;
+  line-height: var(--leading-subhead);
+  letter-spacing: 0.005em;
+  color: var(--color-text);
+  text-wrap: balance;
+}
+.cq-subhead    { font-size: var(--text-subhead); }
+.cq-subhead-lg { font-size: var(--text-subhead-lg); }
+
+/* Tier 2 — body. */
+.cq-body {
+  font-family: var(--font-body);
+  font-size: var(--text-body);
+  line-height: var(--leading-body);
+  color: var(--color-text-secondary);
+  text-wrap: pretty;
+}
+
+/* The one step below body. Captions, labels, data points, system chrome. */
+.cq-caption {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: var(--leading-body);
+  color: var(--color-text-muted);
+}
+
+/* The quiet label. Sentence case on purpose.
+
+   Tracked uppercase works at 8–10px, where it reads as a hairline. At the
+   13px floor it stops whispering and starts announcing, and it eats
+   horizontal space that the layout needs. Separation here comes from colour
+   and a hairline, not from shouting. */
+.cq-label,
+.cq-micro {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  color: var(--color-text-muted);
+}
+
+/* The deliberate exception. Use where a label has to read as a structural
+   marker and nothing quieter will do — and nowhere else. Tracking is 0.1em,
+   not 0.16em: enough to space the caps, not enough to shout. */
+.cq-eyebrow {
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--color-text-muted);
+}
+
+/* Quotes. The book wants Seasons italic; we hold only the roman, so the pull
+   is carried by the rule and the indent instead of a fake slant. */
+.cq-quote {
+  font-family: var(--font-header);
+  font-weight: 700;
+  font-size: var(--text-t1);
+  line-height: var(--leading-t1);
+  color: var(--color-text);
+  border-left: 1px solid var(--color-rule-strong);
+  padding-left: var(--space-6);
+  text-wrap: balance;
+}
+
+/* Legacy font hooks, kept pointing at the right families. */
+.font-tan-mon-cheri {
+  font-family: var(--font-display) !important;
+  letter-spacing: var(--tracking-t0);
+}
+.font-seasons  { font-family: var(--font-header) !important; }
+.font-optima   { font-family: var(--font-body) !important; }
+.font-playfair { font-family: var(--font-header) !important; }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   EDITORIAL WAYFINDING
+   ═════════════════════════════════════════════════════════════════════════ */
+
+/* A numbered section index that trails a rule across the remaining width. */
+.cq-index {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  letter-spacing: 0.01em;
+  color: var(--color-text-muted);
+}
+.cq-index::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--color-rule);
+}
+
+/* The mark.
+   ORDR repeats one small glyph across every feature block, and that repetition
+   is most of why the page reads as a single designed thing rather than a stack
+   of sections. CQ already has its own: the ✧ that opens its Notion dossiers.
+   It sits at the head of a section, quiet enough to be a texture rather than
+   an ornament. */
+.cq-mark {
+  display: inline-block;
+  font-family: var(--font-body);
+  font-size: var(--text-caption);
+  line-height: 1;
+  color: var(--color-rule-strong);
+  /* A space, not a margin: the mark sits inside a text node, and an
+     inline-block margin collapsed against the label beside it. */
+  margin-right: 0;
+  vertical-align: baseline;
+}
+.cq-mark::after { content: '\00a0\00a0'; }
+
+/* Even columns — a row of things of equal weight.
+   The dossier had splits and rails but no way to say "these four are peers",
+   so rows of equals were built by hand each time and drifted apart. */
+.cq-columns {
+  display: grid;
+  gap: var(--space-8);
+}
+@media (min-width: 640px) {
+  .cq-columns-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 768px) {
+  .cq-columns-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .cq-columns-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (min-width: 1024px) {
+  .cq-columns-4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* Bare hairline. */
+.cq-rule {
+  border: 0;
+  height: 1px;
+  background: var(--color-rule);
+  margin-block: var(--space-12);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   LAYOUT
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.cq-shell {
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding-inline: var(--space-5);
+}
+@media (min-width: 640px)  { .cq-shell { padding-inline: var(--space-8); } }
+@media (min-width: 1024px) { .cq-shell { padding-inline: var(--space-12); } }
+@media (min-width: 1536px) { .cq-shell { padding-inline: var(--space-16); } }
+
+/* ── Spans ─────────────────────────────────────────────────────────────────
+   Blocks of different widths, all starting on the same left edge.
+   
+   Every section in the dossier filled the shell, so a page of seven sections
+   drew seven identical rectangles and the composition had no rhythm. These
+   give a section a deliberate width without moving it off the column, which
+   is the strongest editorial device available: shared edge alignment with
+   varied extent. They collapse below 768px, where one column is the whole
+   composition. */
+.cq-span-7 { max-width: 100%; }
+.cq-span-9 { max-width: 100%; }
+@media (min-width: 768px) {
+  .cq-span-7 { max-width: 58%; }   /* ~7 of 12 columns */
+  .cq-span-9 { max-width: 75%; }   /* ~9 of 12 columns */
+}
+
+/* Prose measure. Tightened from 72ch — the book asks for shorter blocks. */
+.cq-measure { max-width: 66ch; }
+
+/* ── Tap area ──────────────────────────────────────────────────────────────
+   A 6px gallery dot is 6px of ink and, until now, 6px of target. The audit
+   found 56 controls under 40px across the phone layouts — dots, chevrons,
+   the menu button, the hero's back arrow — each one a thing the reader has
+   to aim at. This keeps the ink exactly as drawn and grows only the region
+   that responds, out to the 44px the hand actually needs. Applied to the
+   control, not to links in prose, which must not become 44px tall blocks. */
+/* A standalone call-to-action link — "Read →", "Map", "Send email". These are
+   set at caption size, so the text is 16–22px tall and so was the link. Inside
+   a paragraph a link must stay the height of its line; standing alone at the
+   foot of a card it should be as tall as a control. Applied to the second
+   kind only. */
+/* Closed on a phone, always open from 768px up — the breakpoint is here
+   rather than in React so the desktop layout never depends on client state. */
+@media (max-width: 767px) {
+  /* !important is load-bearing: the panels this hides carry an inline
+     display (grid for the chapter spine, flex for a day's cards), and an
+     inline style outranks a class. Without it the class was applied, matched,
+     and did nothing. */
+  .cq-collapsed { display: none !important; }
+}
+
+/* A run of shut sections reads as one list — each door carries its own rule
+   and its own padding, so a further gap between them is wasted space at any
+   width. Open one and the body inside it supplies the air. */
+.cq-door-list { row-gap: 0 !important; }
+/* The last door needs no rule under it: the next section opens with its own,
+   and two hairlines with an empty band between them read as a mistake rather
+   than as a division. */
+.cq-door-list > section:last-child > h2 > .cq-door { border-bottom: none; }
+.cq-collapse-body { padding-top: var(--gap-chapter); }
+@media (max-width: 767px) {
+}
+
+/* Text fields answer to a tap across their whole height. Several were set as
+   a bare 20px line inside a padded row, so only the middle band of what looked
+   like a search box actually focused it. */
+input[type="text"], input[type="search"], input[type="number"], input[type="tel"],
+input[type="email"], input:not([type]), select, textarea {
+  min-height: 44px;
+}
+
+/* ── A door ────────────────────────────────────────────────────────────────
+   A section the reader opens, at every screen size.
+   
+   These sections were doors on a phone and always open on a desktop, on the
+   assumption that a wide screen has room for everything. It has room, but the
+   reader still has to travel past all of it: Your Days on a laptop ran to
+   several screens of brief, vouchers, concierge and recommendations before
+   the journey itself. The same door works on both — it is simply drawn at the
+   size the screen calls for. */
+.cq-shut { display: none !important; }
+
+.cq-door {
+  width: 100%;
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-4);
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--color-rule);
+  padding: var(--space-3) 0;
+  min-height: 44px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+.cq-door-title {
+  display: block;
+  /* The same face and the same rung as the section openers it replaces, at
+     every width. It used to be Optima at 20px on a phone and Seasons at Tier 1
+     from 768px up — one object with two identities, and on the screen most
+     people read it on, the quieter of the two. */
+  font-family: var(--font-header);
+  font-weight: 400;
+  font-size: var(--text-t1-sm);
+  line-height: 1.15;
+  color: var(--color-text);
+}
+@media (min-width: 768px) {
+  .cq-door {
+    align-items: center;
+    padding: var(--space-5) 0;
+    border-bottom-color: var(--color-rule-strong);
+  }
+
+}
+
+.cq-tap-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.cq-tap { position: relative; }
+.cq-tap::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width:  max(100%, 44px);
+  height: max(100%, 44px);
+}
+
+/* Nothing may push the page sideways. Every horizontal rail in the dossier
+   scrolls inside its own box; a child escaping that box drags the whole
+   document with it, which is why the phone layouts could be swiped off to
+   the right into empty space. */
+html, body { overflow-x: clip; }
+
+/* §10: a picture may never be wider than the column it sits in. Without this
+   an image that has not yet had its layout styles applied — or one rendered
+   outside a sized frame — reports its natural width, and the sweep caught a
+   page at 1928px on a 320px screen because of one. */
+img, svg, video, canvas { max-width: 100%; }
+/* Anchored jumps stop below the phone's top bar, not behind it. */
+html { scroll-padding-top: calc(var(--tripbar-h) + var(--space-4)); }
+
+/* 21:9 is 150px tall on a 390px screen — too short to read a photograph and
+   far too short to hold a caption on top of one. Phones get a taller frame. */
+.cq-frame     { aspect-ratio: 3 / 2; }
+@media (min-width: 768px) { .cq-frame { aspect-ratio: 21 / 9; } }
+
+/* ── The Selections set ────────────────────────────────────────────────────
+   A shelf you scan sideways, with every card built the same way.
+
+   The problem was never that it scrolled — it was that the cards were not
+   alike. A story with a cover had a picture and a story without one did not,
+   so the half-card at the screen edge advertised an inconsistency instead of
+   promising more of the same. Every card now carries the same 16:10 picture
+   area and the same text beneath it, and they share a baseline, so the peek
+   at the edge shows a card built exactly like the one beside it — which is
+   what makes a peek a teaser rather than a mistake.
+
+   The card width leaves a deliberate sliver of the next one visible and the
+   rail keeps a gutter at the start, so the row never runs flush to the screen
+   edge where an iOS back-swipe lives. */
+.cq-loaf-set {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-6);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline-start: var(--space-5);
+  padding-inline-end: var(--space-5);
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+}
+.cq-loaf-set::-webkit-scrollbar { display: none; }
+.cq-loaf-set > * {
+  flex: 0 0 auto;
+  width: min(320px, 82vw);
+  min-width: 0;
+  scroll-snap-align: start;
+}
+/* Cards in the row end on the same line. The card fills the height the row
+   gives it; its text block does not stretch to fill the card, so a clamped
+   summary still ends on a whole line. */
+.cq-loaf-set > * > * { height: 100%; }
+.cq-loaf-set > * > * > *:last-child { justify-content: flex-start; }
+
+/* The picture area every card shares, with or without a photograph. */
+.cq-loaf-media {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ── Slide caption ─────────────────────────────────────────────────────────
+   On a desktop the caption lies over the foot of the picture, under a scrim.
+   On a phone that fails twice: the picture is 150px tall, and the caption —
+   a title plus two or three lines of description — grows up past the middle
+   of the frame, where the prev/next buttons sit and paint straight over the
+   words.
+
+   Below 768px the caption moves out from under the picture and sets in ink
+   on the page's own ground, which is where the brand book puts running text
+   anyway. Nothing overlaps because nothing is stacked. */
+@media (max-width: 767px) {
+  .cq-metalist {
+    grid-template-columns: repeat(auto-fit, minmax(96px, auto));
+    column-gap: var(--space-6);
+    row-gap: var(--space-4);
+    justify-content: start;
+  }
+}
+
+.cq-slide-caption {
+  position: static;
+  padding: var(--space-5) var(--space-5) var(--space-6);
+  background: none;
+}
+.cq-slide-caption .cq-slide-date  { color: var(--color-text-muted); }
+.cq-slide-caption .cq-slide-title { color: var(--color-text); }
+.cq-slide-caption .cq-slide-text  { color: var(--color-text-secondary); }
+
+@media (min-width: 768px) {
+  .cq-slide-caption {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 72px 32px 26px;
+    background: linear-gradient(to top,
+      rgb(var(--night-rgb) / 0.90) 0%,
+      rgb(var(--night-rgb) / 0.55) 45%,
+      transparent 100%);
+  }
+  .cq-slide-caption .cq-slide-date  { color: rgb(var(--fade-rgb) / 0.75); }
+  .cq-slide-caption .cq-slide-title { color: var(--color-surface); }
+  .cq-slide-caption .cq-slide-text  { color: rgb(var(--mist-rgb) / 0.78); }
+}
+.cq-frame-map { aspect-ratio: 16 / 7; }
+
+/* ── Horizontal rail ───────────────────────────────────────────────────────
+   Cards run off the edge of the viewport instead of wrapping into a grid.  */
+
+.cq-rail {
+  display: flex;
+  gap: var(--space-6);
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline-start: var(--space-5);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.cq-rail::-webkit-scrollbar { display: none; }
+.cq-rail > * {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+/* Lets a rail bleed past the shell's gutters so cards run to the edge. */
+.cq-rail-bleed {
+  margin-inline: calc(var(--space-5) * -1);
+  padding-inline: var(--space-5);
+}
+@media (min-width: 640px) {
+  .cq-rail-bleed { margin-inline: calc(var(--space-8) * -1); padding-inline: var(--space-8); }
+  .cq-rail { scroll-padding-inline-start: var(--space-8); }
+}
+@media (min-width: 1024px) {
+  .cq-rail-bleed { margin-inline: calc(var(--space-12) * -1); padding-inline: var(--space-12); }
+  .cq-rail { scroll-padding-inline-start: var(--space-12); }
+}
+
+/* ── Split-screen scroll ───────────────────────────────────────────────────
+   One column holds still while the other moves past it.                     */
+
+.cq-split {
+  display: grid;
+  gap: var(--space-10);
+}
+@media (min-width: 1024px) {
+  .cq-split {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-16);
+    align-items: start;
+  }
+  .cq-split-sticky {
+    position: sticky;
+    top: calc(var(--header-h) + var(--space-10));
+  }
+}
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   MOTION
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0);    }
+}
+@keyframes fadeIn    { from { opacity: 0; } to { opacity: 1; } }
+@keyframes pageFadeIn {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0);   }
+}
+@keyframes shimmer {
+  0%   { background-position: -400% 0; }
+  100% { background-position:  400% 0; }
+}
+
+.animate-fade-in  { animation: fadeIn      var(--duration-normal) var(--ease-out) forwards; }
+.animate-slide-up { animation: fadeSlideUp var(--duration-normal) var(--ease-default) forwards; }
+.page-content     { animation: pageFadeIn  var(--duration-normal) var(--ease-out) forwards; }
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgb(var(--fade-rgb) / 0.28) 25%,
+    rgb(var(--fade-rgb) / 0.45) 50%,
+    rgb(var(--fade-rgb) / 0.28) 75%
+  );
+  background-size: 400% 100%;
+  animation: shimmer 2s var(--ease-veil) infinite;
+  border-radius: var(--radius-lg);
+}
+
+/* Cards rise toward the reader. */
+.card-lift { transition: transform var(--duration-slow) var(--ease-default); }
+.card-lift:hover { transform: translateY(-2px); }
+
+.lift-card {
+  transition: transform var(--duration-normal) var(--ease-default),
+              box-shadow var(--duration-normal) var(--ease-default);
+  will-change: transform;
+}
+.lift-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 6px 14px rgb(var(--night-rgb) / 0.09),
+              0 24px 52px rgb(var(--night-rgb) / 0.16);
+}
+
+/* A half-open door: the image drifts, never lunges. */
+.trip-card img { transition: transform var(--duration-veil) var(--ease-veil); }
+.trip-card:hover img { transform: scale(1.04); }
+
+/* ── Scrollbars ────────────────────────────────────────────────────────────── */
+
+::-webkit-scrollbar             { width: 3px; height: 3px; }
+::-webkit-scrollbar-track       { background: var(--color-surface-sunken); }
+::-webkit-scrollbar-thumb       { background: var(--borges); border-radius: var(--radius-sm); }
+::-webkit-scrollbar-thumb:hover { background: var(--night); }
+
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* ── Admin ─────────────────────────────────────────────────────────────────── */
+
+.admin-layout body::after { display: none; }
+
+/* ═════════════════════════════════════════════════════════════════════════════
+   REDUCED MOTION
+   Covers everything, not just the cards.
+   ═════════════════════════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .lift-card:hover,
+  .card-lift:hover,
+  .trip-card:hover img { transform: none; }
+}

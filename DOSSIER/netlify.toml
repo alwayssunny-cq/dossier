@@ -1,0 +1,24 @@
+# Netlify build + scheduling.
+#
+# The Next.js runtime is declared explicitly rather than left to detection, and
+# the publish directory is deliberately not set: the runtime plugin decides it,
+# and pinning `.next` by hand makes Netlify serve the build folder as static
+# files instead — which produces a 404 on every route, index included.
+#
+# The two crons came from vercel.json, which Netlify does not read. They are
+# scheduled functions now, and each one does what Vercel's cron did: call the
+# existing protected endpoint with CRON_SECRET. The work itself still lives in
+# the app, so nothing is duplicated and either host can drive it.
+
+[build]
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "22"
+  # Playwright is a devDependency used only by the audit scripts, which run on
+  # a developer's machine. Its postinstall fetches several hundred megabytes of
+  # browsers, which the deploy neither needs nor should wait for.
+  PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD = "1"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

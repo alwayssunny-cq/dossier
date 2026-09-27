@@ -1,0 +1,37 @@
+name: Weekly LOAF Digest
+
+# Runs every Monday at 6:30 AM IST (1:00 UTC)
+# Triggers Claude AI to read the CQ LOAF page and write this week's story
+# to Notion (past issues DB) + Supabase (loaf_stories table) + sync dossier
+
+on:
+  schedule:
+    - cron: '0 1 * * 1'
+  workflow_dispatch: # Allow manual trigger from GitHub Actions UI
+
+jobs:
+  loaf-digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Trigger AI Loaf Digest
+        run: |
+          response=$(curl -s -w "\n%{http_code}" -X POST \
+            "${{ secrets.APP_URL }}/api/ai/loaf-digest" \
+            -H "Content-Type: application/json" \
+            -d "{\"password\": \"${{ secrets.ADMIN_PASSWORD }}\"}")
+
+          http_code=$(echo "$response" | tail -1)
+          body=$(echo "$response" | head -1)
+
+          echo "HTTP Status: $http_code"
+          echo "Response: $body"
+
+          if [ "$http_code" != "200" ]; then
+            echo "::error::Loaf digest failed with status $http_code"
+            exit 1
+          fi
+
+          headline=$(echo "$body" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('story',{}).get('headline',''))" 2>/dev/null || echo "")
+          echo "::notice::This week's LOAF: $headline"
